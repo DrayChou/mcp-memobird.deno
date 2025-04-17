@@ -94,14 +94,16 @@ async function main() {
         "print_text",
         { text: z.string().describe("The text content to print.") }, // 添加描述
         async ({ text }) => {
-            console.log(`Received print_text request: '${text.substring(0, 50)}...'`);
+            console.log(`🛠️ 执行工具: print_text`);
+            console.log(`📝 参数: ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`);
             if (!bird) {
+                console.log(`❌ 工具执行失败: Memobird client not initialized`);
                 return { isError: true, content: [{ type: "text", text: "Error: Memobird client not initialized." }] };
             }
             try {
                 const contentId = await bird.printText(text);
                 const result = `Text sent to printer successfully. Content ID: ${contentId}`;
-                console.log(result);
+                console.log(`✅ 工具执行成功: ${result}`);
                 return { content: [{ type: "text", text: result }] };
             } catch (e) {
                 let errorMsg = `Unexpected error printing text: ${e instanceof Error ? e.message : String(e)}`;
@@ -112,7 +114,7 @@ async function main() {
                 } else if (e instanceof MemobirdError) {
                     errorMsg = `Memobird client error printing text: ${e.message}`;
                 }
-                console.error(errorMsg);
+                console.error(`❌ 工具执行失败: ${errorMsg}`);
                 return { isError: true, content: [{ type: "text", text: errorMsg }] };
             }
         }
@@ -124,8 +126,9 @@ async function main() {
         // Base64 编码的图像数据字符串
         { image_base64: z.string().describe("Base64-encoded image data string.") },
         async ({ image_base64 }) => {
-            console.log(`Received print_image request (base64 data length: ${image_base64.length})`);
+            console.log(`🛠️ 执行工具: print_image (base64 数据长度: ${image_base64.length})`);
             if (!bird) {
+                console.log(`❌ 工具执行失败: Memobird client not initialized`);
                 return { isError: true, content: [{ type: "text", text: "Error: Memobird client not initialized." }] };
             }
             // **重要:** 当前实现不处理文件路径或图像转换。
@@ -134,7 +137,7 @@ async function main() {
             try {
                 const contentId = await bird.printImage(image_base64);
                 const result = `Base64 image sent to printer successfully. Content ID: ${contentId}`;
-                console.log(result);
+                console.log(`✅ 工具执行成功: ${result}`);
                 return { content: [{ type: "text", text: result }] };
             } catch (e) {
                 let errorMsg = `Unexpected error printing image: ${e instanceof Error ? e.message : String(e)}`;
@@ -147,7 +150,7 @@ async function main() {
                 } else if (e instanceof MemobirdError) {
                     errorMsg = `Memobird client error printing image: ${e.message}`;
                 }
-                console.error(errorMsg);
+                console.error(`❌ 工具执行失败: ${errorMsg}`);
                 return { isError: true, content: [{ type: "text", text: errorMsg }] };
             }
         }
@@ -158,14 +161,16 @@ async function main() {
         "print_url",
         { url: z.string().url().describe("The URL of the content to print.") },
         async ({ url }) => {
-            console.log(`Received print_url request for URL: ${url}`);
+            console.log(`🛠️ 执行工具: print_url`);
+            console.log(`📝 参数: ${url}`);
             if (!bird) {
+                console.log(`❌ 工具执行失败: Memobird client not initialized`);
                 return { isError: true, content: [{ type: "text", text: "Error: Memobird client not initialized." }] };
             }
             try {
                 const contentId = await bird.printUrl(url);
                 const result = `URL content sent to printer successfully. Content ID: ${contentId}`;
-                console.log(result);
+                console.log(`✅ 工具执行成功: ${result}`);
                 return { content: [{ type: "text", text: result }] };
             } catch (e) {
                 let errorMsg = `Unexpected error printing URL ${url}: ${e instanceof Error ? e.message : String(e)}`;
@@ -176,7 +181,7 @@ async function main() {
                 } else if (e instanceof MemobirdError) {
                     errorMsg = `Memobird client error printing URL: ${e.message}`;
                 }
-                console.error(errorMsg);
+                console.error(`❌ 工具执行失败: ${errorMsg}`);
                 return { isError: true, content: [{ type: "text", text: errorMsg }] };
             }
         }
@@ -200,13 +205,19 @@ async function main() {
 
         console.log(`Starting server with SSE transport on port ${port}...`);
 
+        // 注册工具的日志
+        console.log(`已注册的工具列表:`);
+        console.log(`  - print_text: 打印文本内容到咕咕机`);
+        console.log(`  - print_image: 打印图片到咕咕机`);
+        console.log(`  - print_url: 打印网页内容到咕咕机`);
+
         // 使用对象来存储不同会话的 transport
         const transports: { [sessionId: string]: SSEServerTransport } = {};
 
         // 创建 HTTP 服务器，使用标准 Node.js HTTP API (Deno 兼容)
         const httpServer = http.createServer((req, res) => {
             const url = new URL(req.url || "", `http://${req.headers.host}`);
-            console.log(`${req.method} ${url.pathname}`);
+            console.log(`${req.method} ${url.pathname}${url.search}`);
 
             if (url.pathname === "/") {
                 res.writeHead(200, { "Content-Type": "application/json" });
@@ -223,7 +234,7 @@ async function main() {
 
             // 处理 SSE 连接请求
             if (req.method === "GET" && url.pathname === "/sse") {
-                console.log("SSE connection attempt received");
+                console.log("📡 SSE连接请求接收");
 
                 // 设置 SSE 响应头
                 res.writeHead(200, {
@@ -238,19 +249,19 @@ async function main() {
                 const sessionId = transport.sessionId;
                 transports[sessionId] = transport;
 
-                console.log(`SSE transport created with sessionId: ${sessionId}`);
+                console.log(`✅ SSE传输创建成功，会话ID: ${sessionId}`);
 
                 // 监听连接关闭
                 res.on("close", () => {
-                    console.log(`SSE connection closed for session: ${sessionId}`);
+                    console.log(`🔌 SSE连接已关闭，会话ID: ${sessionId}`);
                     delete transports[sessionId];
                 });
 
                 // 连接到 MCP 服务器
                 server.connect(transport).then(() => {
-                    console.log(`MCP Server connected to transport for session: ${sessionId}`);
+                    console.log(`🔗 MCP服务器已连接到会话: ${sessionId}`);
                 }).catch(e => {
-                    console.error(`Error connecting server to transport: ${e instanceof Error ? e.message : String(e)}`);
+                    console.error(`❌ 连接MCP服务器失败: ${e instanceof Error ? e.message : String(e)}`);
                 });
 
                 return;
@@ -260,26 +271,53 @@ async function main() {
             if (req.method === "POST" && url.pathname === "/messages") {
                 const sessionId = url.searchParams.get("sessionId");
                 if (!sessionId) {
+                    console.log("❌ 缺少sessionId参数");
                     res.writeHead(400);
                     res.end("Missing sessionId query parameter");
                     return;
                 }
 
-                console.log(`Received message for sessionId: ${sessionId}`);
+                console.log(`📩 接收到消息请求，会话ID: ${sessionId}`);
 
                 const transport = transports[sessionId];
                 if (!transport) {
-                    console.warn(`No active SSE transport found for sessionId: ${sessionId}`);
+                    console.warn(`⚠️ 未找到活跃的SSE传输，会话ID: ${sessionId}`);
                     res.writeHead(400);
                     res.end(`No transport found for sessionId ${sessionId}`);
                     return;
                 }
 
-                console.log(`Handling message with transport for session: ${sessionId}`);
+                // 读取请求体内容用于日志
+                let requestBody = "";
+                req.on('data', (chunk) => {
+                    requestBody += chunk;
+                });
+
+                req.on('end', () => {
+                    try {
+                        // 尝试解析JSON
+                        const json = JSON.parse(requestBody);
+                        console.log(`📨 客户端请求 [${sessionId}]: ${JSON.stringify({
+                            method: json.method,
+                            id: json.id,
+                            params: json.params ? (typeof json.params === 'object' ? `[${Object.keys(json.params).join(', ')}]` : json.params) : undefined
+                        })}`);
+
+                        // 监听响应完成事件
+                        res.on('finish', () => {
+                            console.log(`📤 响应已发送完成，会话ID: ${sessionId}`);
+                        });
+
+                    } catch (e) {
+                        console.log(`📝 收到非JSON格式消息 (可能是二进制数据)`);
+                    }
+                });
+
+                console.log(`🔄 处理消息中...`);
 
                 // 直接调用 transport 的处理方法
                 transport.handlePostMessage(req, res).catch(e => {
-                    console.error(`Error handling POST message: ${e instanceof Error ? e.message : String(e)}`);
+                    console.error(`❌ 处理消息失败: ${e instanceof Error ? e.message : String(e)}`);
                     if (!res.writableEnded) {
                         res.writeHead(500);
                         res.end(`Internal Server Error: ${e instanceof Error ? e.message : "Unknown error"}`);
@@ -296,15 +334,15 @@ async function main() {
 
         // 启动 HTTP 服务器
         httpServer.listen(port, () => {
-            console.log(`HTTP SSE server listening on http://localhost:${port}`);
+            console.log(`🚀 HTTP SSE服务器已启动，监听地址: http://localhost:${port}`);
         });
 
         // 保持进程运行，直到收到中断信号
         await new Promise<void>((resolve) => {
             Deno.addSignalListener("SIGINT", () => {
-                console.log("Received SIGINT, shutting down...");
+                console.log("👋 收到SIGINT信号，正在关闭服务器...");
                 httpServer.close(() => {
-                    console.log("Server closed");
+                    console.log("👍 服务器已关闭");
                     resolve();
                 });
             });
