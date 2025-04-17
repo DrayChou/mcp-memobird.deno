@@ -1,0 +1,1349 @@
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/mod.ts:2:1
+
+[0m  Provides user-friendly {@linkcode serve} on top of Deno's native HTTP server[0m
+  and other utilities for creating HTTP servers and clients.[0m
+  [0m
+  ## File Server[0m
+  [0m
+  A small program for serving local files over HTTP.[0m
+  [0m
+  ```sh[0m
+  deno run --allow-net --allow-read jsr:@std/http/file-server[0m
+  Listening on:[0m
+  - Local: http://localhost:8000[0m
+  ```[0m
+  [0m
+  When the `--allow-sys=networkInterfaces` permission is provided, the file[0m
+  server will also display the local area network addresses that can be used to[0m
+  access the server.[0m
+  [0m
+  ## HTTP Status Code and Status Text[0m
+  [0m
+  Helper for processing status code and status text.[0m
+  [0m
+  ## HTTP errors[0m
+  [0m
+  Provides error classes for each HTTP error status code as well as utility[0m
+  functions for handling HTTP errors in a structured way.[0m
+  [0m
+  ## Methods[0m
+  [0m
+  Provides helper functions and types to work with HTTP method strings safely.[0m
+  [0m
+  ## Negotiation[0m
+  [0m
+  A set of functions which can be used to negotiate content types, encodings and[0m
+  languages when responding to requests.[0m
+  [0m
+  > Note: some libraries include accept charset functionality by analyzing the[0m
+  > `Accept-Charset` header. This is a legacy header that[0m
+  > {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept-Charset | clients omit and servers should ignore}[0m
+  > therefore is not provided.[0m
+  [0m
+  ## User agent handling[0m
+  [0m
+  The {@linkcode UserAgent} class provides user agent string parsing, allowing[0m
+  a user agent flag to be semantically understood.[0m
+  [0m
+  For example to integrate the user agent provided in the header `User-Agent`[0m
+  in an http request would look like this:[0m
+  [0m
+  ```ts ignore[0m
+  import { UserAgent } from "@std/http/user-agent";[0m
+  [0m
+  Deno.serve((req) => {[0m
+    const userAgent = new UserAgent(req.headers.get("user-agent") ?? "");[0m
+    return new Response(`Hello, ${userAgent.browser.name}[0m
+      on ${userAgent.os.name} ${userAgent.os.version}!`);[0m
+  });[0m
+  ```[0m
+  [0m
+  ### Routing[0m
+  [0m
+  {@linkcode route} provides an easy way to route requests to different[0m
+  handlers based on the request path and method.[0m
+  [0m
+  ```ts ignore[0m
+  import { route, type Route } from "@std/http/unstable-route";[0m
+  import { serveDir } from "@std/http/file-server";[0m
+  [0m
+  const routes: Route[] = [[0m
+    {[0m
+      pattern: new URLPattern({ pathname: "/about" }),[0m
+      handler: () => new Response("About page"),[0m
+    },[0m
+    {[0m
+      pattern: new URLPattern({ pathname: "/users/:id" }),[0m
+      handler: (_req, _info, params) => new Response(params?.pathname.groups.id),[0m
+    },[0m
+    {[0m
+      pattern: new URLPattern({ pathname: "/static/*" }),[0m
+      handler: (req: Request) => serveDir(req)[0m
+    },[0m
+    {[0m
+      method: ["GET", "HEAD"],[0m
+      pattern: new URLPattern({ pathname: "/api" }),[0m
+      handler: (req: Request) => new Response(req.method === 'HEAD' ? null : 'ok'),[0m
+    },[0m
+  ];[0m
+  [0m
+  function defaultHandler(_req: Request) {[0m
+    return new Response("Not found", { status: 404 });[0m
+  }[0m
+  [0m
+  Deno.serve(route(routes, defaultHandler));[0m
+  ```[0m
+
+  @[0m[35mmodule[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/negotiation.ts:44:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1maccepts[0m(request[0m[35m[0m: [0m[38;5;12mPick[0m<[0m[38;5;12mRequest[0m, [0m[32m"headers"[0m>): [0m[36mstring[0m[]
+  Returns an array of media types accepted by the request, in order of[0m
+  preference. If there are no media types supplied in the request, then any[0m
+  media type selector will be returned.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { accepts } from "@std/http/negotiation";[0m
+      import { assertEquals } from "@std/assert";[0m
+      [0m
+      const request = new Request("https://example.com/", {[0m
+        headers: {[0m
+          accept:[0m
+            "text/html, application/xhtml+xml, application/xml;q=0.9, image/webp, *\/*;q=0.8",[0m
+        },[0m
+      });[0m
+      [0m
+      assertEquals(accepts(request), [[0m
+        "text/html",[0m
+        "application/xhtml+xml",[0m
+        "image/webp",[0m
+        "application/xml",[0m
+        "*\/*",[0m
+      ]);[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mrequest[0m
+      The request to get the acceptable media types for.[0m
+
+  @[0m[35mreturn[0m
+      An array of acceptable media types.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/negotiation.ts:68:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1maccepts[0m(request[0m[35m[0m: [0m[38;5;12mPick[0m<[0m[38;5;12mRequest[0m, [0m[32m"headers"[0m>, ...types[0m[35m[0m: [0m[36mstring[0m[]): [0m[36mstring[0m | [0m[36mundefined[0m
+  For a given set of media types, return the best match accepted in the[0m
+  request. If no media type matches, then the function returns `undefined`.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { accepts } from "@std/http/negotiation";[0m
+      import { assertEquals } from "@std/assert";[0m
+      [0m
+      const request = new Request("https://example.com/", {[0m
+        headers: {[0m
+          accept:[0m
+            "text/html, application/xhtml+xml, application/xml;q=0.9, image/webp, *\/*;q=0.8",[0m
+        },[0m
+      });[0m
+      [0m
+      assertEquals(accepts(request, "text/html", "image/webp"), "text/html");[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mrequest[0m
+      The request to get the acceptable media types for.[0m
+
+  @[0m[35mparam[0m [0m[1mtypes[0m
+      An array of media types to find the best matching one from.[0m
+
+  @[0m[35mreturn[0m
+      The best matching media type, if any match.[0m
+
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/negotiation.ts:104:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1macceptsEncodings[0m(request[0m[35m[0m: [0m[38;5;12mPick[0m<[0m[38;5;12mRequest[0m, [0m[32m"headers"[0m>): [0m[36mstring[0m[]
+  Returns an array of content encodings accepted by the request, in order of[0m
+  preference. If there are no encoding supplied in the request, then `["*"]`[0m
+  is returned, implying any encoding is accepted.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { acceptsEncodings } from "@std/http/negotiation";[0m
+      import { assertEquals } from "@std/assert";[0m
+      [0m
+      const request = new Request("https://example.com/", {[0m
+        headers: { "accept-encoding": "deflate, gzip;q=1.0, *;q=0.5" },[0m
+      });[0m
+      [0m
+      assertEquals(acceptsEncodings(request), ["deflate", "gzip", "*"]);[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mrequest[0m
+      The request to get the acceptable content encodings for.[0m
+
+  @[0m[35mreturn[0m
+      An array of content encodings this request accepts.[0m
+
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/negotiation.ts:130:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1macceptsEncodings[0m(request[0m[35m[0m: [0m[38;5;12mPick[0m<[0m[38;5;12mRequest[0m, [0m[32m"headers"[0m>, ...encodings[0m[35m[0m: [0m[36mstring[0m[]): [0m[36mstring[0m | [0m[36mundefined[0m
+  For a given set of content encodings, return the best match accepted in the[0m
+  request. If no content encodings match, then the function returns[0m
+  `undefined`.[0m
+  [0m
+  **NOTE:** You should always supply `identity` as one of the encodings[0m
+  to ensure that there is a match when the `Accept-Encoding` header is part[0m
+  of the request.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { acceptsEncodings } from "@std/http/negotiation";[0m
+      import { assertEquals } from "@std/assert";[0m
+      [0m
+      const request = new Request("https://example.com/", {[0m
+        headers: { "accept-encoding": "deflate, gzip;q=1.0, *;q=0.5" },[0m
+      });[0m
+      [0m
+      assertEquals(acceptsEncodings(request, "gzip", "identity"), "gzip");[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mrequest[0m
+      The request to get the acceptable content encodings for.[0m
+
+  @[0m[35mparam[0m [0m[1mencodings[0m
+      An array of encodings to find the best matching one from.[0m
+
+  @[0m[35mreturn[0m
+      The best matching encoding, if any match.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/negotiation.ts:170:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1macceptsLanguages[0m(request[0m[35m[0m: [0m[38;5;12mPick[0m<[0m[38;5;12mRequest[0m, [0m[32m"headers"[0m>): [0m[36mstring[0m[]
+  Returns an array of languages accepted by the request, in order of[0m
+  preference. If there are no languages supplied in the request, then `["*"]`[0m
+  is returned, imply any language is accepted.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { acceptsLanguages } from "@std/http/negotiation";[0m
+      import { assertEquals } from "@std/assert";[0m
+      [0m
+      const request = new Request("https://example.com/", {[0m
+        headers: {[0m
+          "accept-language": "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5",[0m
+        },[0m
+      });[0m
+      [0m
+      assertEquals(acceptsLanguages(request), ["fr-CH", "fr", "en", "de", "*"]);[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mrequest[0m
+      The request to get the acceptable languages for.[0m
+
+  @[0m[35mreturn[0m
+      An array of languages this request accepts.[0m
+
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/negotiation.ts:193:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1macceptsLanguages[0m(request[0m[35m[0m: [0m[38;5;12mPick[0m<[0m[38;5;12mRequest[0m, [0m[32m"headers"[0m>, ...langs[0m[35m[0m: [0m[36mstring[0m[]): [0m[36mstring[0m | [0m[36mundefined[0m
+  For a given set of languages, return the best match accepted in the request.[0m
+  If no languages match, then the function returns `undefined`.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { acceptsLanguages } from "@std/http/negotiation";[0m
+      import { assertEquals } from "@std/assert";[0m
+      [0m
+      const request = new Request("https://example.com/", {[0m
+        headers: {[0m
+          "accept-language": "fr-CH, fr;q=0.9, en;q=0.8, de;q=0.7, *;q=0.5",[0m
+        },[0m
+      });[0m
+      [0m
+      assertEquals(acceptsLanguages(request, "en-gb", "en-us", "en"), "en");[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mrequest[0m
+      The request to get the acceptable language for.[0m
+
+  @[0m[35mparam[0m [0m[1mlangs[0m
+      An array of languages to find the best matching one from.[0m
+
+  @[0m[35mreturn[0m
+      The best matching language, if any match.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/cookie.ts:327:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1mdeleteCookie[0m(headers[0m[35m[0m: [0m[38;5;12mHeaders[0m, name[0m[35m[0m: [0m[36mstring[0m, attributes[0m[35m?[0m: [0m[38;5;12mPick[0m<[0m[38;5;12mCookie[0m, [0m[32m"path"[0m | [0m[32m"domain"[0m | [0m[32m"secure"[0m | [0m[32m"httpOnly"[0m | [0m[32m"partitioned"[0m>): [0m[36mvoid[0m
+  Set the cookie header with empty value in the headers to delete it.[0m
+  [0m
+  The attributes (`path`, `domain`, `secure`, `httpOnly`, `partitioned`) need[0m
+  to match the values when the cookie was set.[0m
+  [0m
+  > Note: Deleting a `Cookie` will set its expiration date before now. Forcing[0m
+  > the browser to delete it.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { deleteCookie } from "@std/http/cookie";[0m
+      import { assertEquals } from "@std/assert";[0m
+      [0m
+      const headers = new Headers();[0m
+      deleteCookie(headers, "deno");[0m
+      [0m
+      const cookieHeader = headers.get("set-cookie");[0m
+      [0m
+      assertEquals(cookieHeader, "deno=; Expires=Thu, 01 Jan 1970 00:00:00 GMT");[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mheaders[0m
+      The headers instance to delete the cookie from[0m
+
+  @[0m[35mparam[0m [0m[1mname[0m
+      Name of cookie[0m
+
+  @[0m[35mparam[0m [0m[1mattributes[0m
+      Additional cookie attributes[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/etag.ts:118:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35masync [0m[0m[35mfunction[0m[0m[35m[0m [0m[1meTag[0m(entity[0m[35m[0m: [0m[36mstring[0m | [0m[38;5;12mUint8Array[0m, options[0m[35m?[0m: [0m[38;5;12mETagOptions[0m): [0m[38;5;12mPromise[0m<[0m[36mstring[0m>
+  Calculate an ETag for string or `Uint8Array` entities. This returns a[0m
+  {@linkcode https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag#etag_value | strong tag}[0m
+  of the form `"<ascii chars>"`, which guarantees the byte-for-byte equality of the resource.[0m
+  [0m
+  You can optionally set true to the `weak` option to get a weak tag.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { eTag } from "@std/http/etag";[0m
+      import { assert } from "@std/assert";[0m
+      [0m
+      const body = "hello deno!";[0m
+      [0m
+      const etag = await eTag(body);[0m
+      assert(etag);[0m
+      [0m
+      const res = new Response(body, { headers: { etag } });[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mentity[0m
+      The entity to get the ETag for.[0m
+
+  @[0m[35mparam[0m [0m[1moptions[0m
+      Various additional options.[0m
+
+  @[0m[35mreturn[0m
+      The calculated ETag.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/etag.ts:147:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35masync [0m[0m[35mfunction[0m[0m[35m[0m [0m[1meTag[0m(entity[0m[35m[0m: [0m[38;5;12mFileInfo[0m, options[0m[35m?[0m: [0m[38;5;12mETagOptions[0m): [0m[38;5;12mPromise[0m<[0m[36mstring[0m | [0m[36mundefined[0m>
+  Calculate an ETag for file information entity. This returns a[0m
+  {@linkcode https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag#w | weak tag}[0m
+  of the form `W\"<ascii chars>"`, which guarantees the equivalence of the resource,[0m
+  not the byte-for-byte equality.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { eTag } from "@std/http/etag";[0m
+      import { assert } from "@std/assert";[0m
+      [0m
+      const fileInfo = await Deno.stat("README.md");[0m
+      [0m
+      const etag = await eTag(fileInfo);[0m
+      assert(etag);[0m
+      [0m
+      using file = await Deno.open("README.md");[0m
+      [0m
+      const res = new Response(file.readable, { headers: { etag } });[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mentity[0m
+      The entity to get the ETag for.[0m
+
+  @[0m[35mparam[0m [0m[1moptions[0m
+      Various additional options.[0m
+
+  @[0m[35mreturn[0m
+      The calculated ETag.[0m
+
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/cookie.ts:254:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1mgetCookies[0m(headers[0m[35m[0m: [0m[38;5;12mHeaders[0m): [0m[38;5;12mRecord[0m<[0m[36mstring[0m, [0m[36mstring[0m>
+  Parse cookies of a header[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { getCookies } from "@std/http/cookie";[0m
+      import { assertEquals } from "@std/assert";[0m
+      [0m
+      const headers = new Headers();[0m
+      headers.set("Cookie", "full=of; tasty=chocolate");[0m
+      [0m
+      const cookies = getCookies(headers);[0m
+      assertEquals(cookies, { full: "of", tasty: "chocolate" });[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mheaders[0m
+      The headers instance to get cookies from[0m
+
+  @[0m[35mreturn[0m
+      Object with cookie names as keys[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/cookie.ts:459:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1mgetSetCookies[0m(headers[0m[35m[0m: [0m[38;5;12mHeaders[0m): [0m[38;5;12mCookie[0m[]
+  Parse set-cookies of a header[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { getSetCookies } from "@std/http/cookie";[0m
+      import { assertEquals } from "@std/assert";[0m
+      [0m
+      const headers = new Headers([[0m
+        ["Set-Cookie", "lulu=meow; Secure; Max-Age=3600"],[0m
+        ["Set-Cookie", "booya=kasha; HttpOnly; Path=/"],[0m
+      ]);[0m
+      [0m
+      const cookies = getSetCookies(headers);[0m
+      [0m
+      assertEquals(cookies[0], {[0m
+        name: "lulu",[0m
+        value: "meow",[0m
+        secure: true,[0m
+        maxAge: 3600[0m
+      });[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mheaders[0m
+      The headers instance to get set-cookies from[0m
+
+  @[0m[35mreturn[0m
+      List of cookies[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/etag.ts:200:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1mifMatch[0m(value[0m[35m[0m: [0m[36mstring[0m | [0m[36mnull[0m, etag[0m[35m[0m: [0m[36mstring[0m | [0m[36mundefined[0m): [0m[36mboolean[0m
+  A helper function that takes the value from the `If-Match` header and a[0m
+  calculated etag for the target. By using strong comparison, return `true` if[0m
+  the values match, otherwise `false`.[0m
+  [0m
+  See MDN's [`If-Match`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-Match)[0m
+  article for more information on how to use this function.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts ignore[0m
+      import {[0m
+        eTag,[0m
+        ifMatch,[0m
+      } from "@std/http/etag";[0m
+      import { assert } from "@std/assert";[0m
+      [0m
+      const body = "hello deno!";[0m
+      [0m
+      Deno.serve(async (req) => {[0m
+        const ifMatchValue = req.headers.get("if-match");[0m
+        const etag = await eTag(body);[0m
+        assert(etag);[0m
+        if (!ifMatchValue || ifMatch(ifMatchValue, etag)) {[0m
+          return new Response(body, { status: 200, headers: { etag } });[0m
+        } else {[0m
+          return new Response(null, { status: 412, statusText: "Precondition Failed"});[0m
+        }[0m
+      });[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mvalue[0m
+      the If-Match header value.[0m
+
+  @[0m[35mparam[0m [0m[1metag[0m
+      the ETag to check against.[0m
+
+  @[0m[35mreturn[0m
+      whether or not the parameters match.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/etag.ts:248:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1mifNoneMatch[0m(value[0m[35m[0m: [0m[36mstring[0m | [0m[36mnull[0m, etag[0m[35m[0m: [0m[36mstring[0m | [0m[36mundefined[0m): [0m[36mboolean[0m
+  A helper function that takes the value from the `If-None-Match` header and[0m
+  a calculated etag for the target entity and returns `false` if the etag for[0m
+  the entity matches the supplied value, otherwise `true`.[0m
+  [0m
+  See MDN's [`If-None-Match`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match)[0m
+  article for more information on how to use this function.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts ignore[0m
+      import {[0m
+        eTag,[0m
+        ifNoneMatch,[0m
+      } from "@std/http/etag";[0m
+      import { assert } from "@std/assert";[0m
+      [0m
+      const body = "hello deno!";[0m
+      [0m
+      Deno.serve(async (req) => {[0m
+        const ifNoneMatchValue = req.headers.get("if-none-match");[0m
+        const etag = await eTag(body);[0m
+        assert(etag);[0m
+        if (!ifNoneMatch(ifNoneMatchValue, etag)) {[0m
+          return new Response(null, { status: 304, headers: { etag } });[0m
+        } else {[0m
+          return new Response(body, { status: 200, headers: { etag } });[0m
+        }[0m
+      });[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mvalue[0m
+      the If-None-Match header value.[0m
+
+  @[0m[35mparam[0m [0m[1metag[0m
+      the ETag to check against.[0m
+
+  @[0m[35mreturn[0m
+      whether or not the parameters do not match.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:408:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1misClientErrorStatus[0m(status[0m[35m[0m: [0m[36mnumber[0m): status is [0m[38;5;12mClientErrorStatus[0m
+  A type guard that determines if the status code is a client error.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { isClientErrorStatus } from "@std/http/status";[0m
+      import { assert } from "@std/assert";[0m
+      [0m
+      assert(isClientErrorStatus(404));[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mstatus[0m
+      The status to assert against.[0m
+
+  @[0m[35mreturn[0m
+      Whether or not the provided status is a client error status code.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:448:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1misErrorStatus[0m(status[0m[35m[0m: [0m[36mnumber[0m): status is [0m[38;5;12mErrorStatus[0m
+  A type guard that determines if the status code is an error.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { isErrorStatus } from "@std/http/status";[0m
+      import { assert } from "@std/assert";[0m
+      [0m
+      assert(isErrorStatus(502));[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mstatus[0m
+      The status to assert against.[0m
+
+  @[0m[35mreturn[0m
+      Whether or not the provided status is an error status code.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:350:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1misInformationalStatus[0m(status[0m[35m[0m: [0m[36mnumber[0m): status is [0m[38;5;12mInformationalStatus[0m
+  A type guard that determines if the status code is informational.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { isInformationalStatus } from "@std/http/status";[0m
+      import { assert } from "@std/assert";[0m
+      [0m
+      assert(isInformationalStatus(100));[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mstatus[0m
+      The status to assert against.[0m
+
+  @[0m[35mreturn[0m
+      Whether or not the provided status is an informational status code.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:390:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1misRedirectStatus[0m(status[0m[35m[0m: [0m[36mnumber[0m): status is [0m[38;5;12mRedirectStatus[0m
+  A type guard that determines if the status code is a redirection.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { isRedirectStatus } from "@std/http/status";[0m
+      import { assert } from "@std/assert";[0m
+      [0m
+      assert(isRedirectStatus(302));[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mstatus[0m
+      The status to assert against.[0m
+
+  @[0m[35mreturn[0m
+      Whether or not the provided status is a redirect status code.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:428:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1misServerErrorStatus[0m(status[0m[35m[0m: [0m[36mnumber[0m): status is [0m[38;5;12mServerErrorStatus[0m
+  A type guard that determines if the status code is a server error.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { isServerErrorStatus } from "@std/http/status";[0m
+      import { assert } from "@std/assert";[0m
+      [0m
+      assert(isServerErrorStatus(502));[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mstatus[0m
+      The status to assert against.[0m
+
+  @[0m[35mreturn[0m
+      Whether or not the provided status is a server error status code.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:332:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1misStatus[0m(status[0m[35m[0m: [0m[36mnumber[0m): status is [0m[38;5;12mStatusCode[0m
+  Returns whether the provided number is a valid HTTP status code.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { isStatus } from "@std/http/status";[0m
+      import { assert } from "@std/assert";[0m
+      [0m
+      assert(isStatus(404));[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mstatus[0m
+      The status to assert against.[0m
+
+  @[0m[35mreturn[0m
+      Whether or not the provided status is a valid status code.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:370:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1misSuccessfulStatus[0m(status[0m[35m[0m: [0m[36mnumber[0m): status is [0m[38;5;12mSuccessfulStatus[0m
+  A type guard that determines if the status code is successful.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { isSuccessfulStatus } from "@std/http/status";[0m
+      import { assert } from "@std/assert";[0m
+      [0m
+      assert(isSuccessfulStatus(200));[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mstatus[0m
+      The status to assert against.[0m
+
+  @[0m[35mreturn[0m
+      Whether or not the provided status is a successful status code.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/file_server.ts:648:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35masync [0m[0m[35mfunction[0m[0m[35m[0m [0m[1mserveDir[0m(req[0m[35m[0m: [0m[38;5;12mRequest[0m, opts[0m[35m[0m: [0m[38;5;12mServeDirOptions[0m): [0m[38;5;12mPromise[0m<[0m[38;5;12mResponse[0m>
+  Serves the files under the given directory root (opts.fsRoot).[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts ignore[0m
+      import { serveDir } from "@std/http/file-server";[0m
+      [0m
+      Deno.serve((req) => {[0m
+        const pathname = new URL(req.url).pathname;[0m
+        if (pathname.startsWith("/static")) {[0m
+          return serveDir(req, {[0m
+            fsRoot: "path/to/static/files/dir",[0m
+          });[0m
+        }[0m
+        // Do dynamic responses[0m
+        return new Response();[0m
+      });[0m
+      ```[0m
+
+  @[0m[35mexample[0m
+      Changing the URL root[0m
+      [0m
+      Requests to `/static/path/to/file` will be served from `./public/path/to/file`.[0m
+      [0m
+      ```ts ignore[0m
+      import { serveDir } from "@std/http/file-server";[0m
+      [0m
+      Deno.serve((req) => serveDir(req, {[0m
+        fsRoot: "public",[0m
+        urlRoot: "static",[0m
+      }));[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mreq[0m
+      The request to handle[0m
+
+  @[0m[35mparam[0m [0m[1mopts[0m
+      Additional options.[0m
+
+  @[0m[35mreturn[0m
+      A response for the request.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/file_server.ts:176:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35masync [0m[0m[35mfunction[0m[0m[35m[0m [0m[1mserveFile[0m(req[0m[35m[0m: [0m[38;5;12mRequest[0m, filePath[0m[35m[0m: [0m[36mstring[0m, options[0m[35m?[0m: [0m[38;5;12mServeFileOptions[0m): [0m[38;5;12mPromise[0m<[0m[38;5;12mResponse[0m>
+  Resolves a {@linkcode Response} with the requested file as the body.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts ignore[0m
+      import { serveFile } from "@std/http/file-server";[0m
+      [0m
+      Deno.serve((req) => {[0m
+        return serveFile(req, "README.md");[0m
+      });[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mreq[0m
+      The server request context used to cleanup the file handle.[0m
+
+  @[0m[35mparam[0m [0m[1mfilePath[0m
+      Path of the file to serve.[0m
+
+  @[0m[35mparam[0m [0m[1moptions[0m
+      Additional options.[0m
+
+  @[0m[35mreturn[0m
+      A response for the request.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/cookie.ts:292:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mfunction[0m[0m[35m[0m [0m[1msetCookie[0m(headers[0m[35m[0m: [0m[38;5;12mHeaders[0m, cookie[0m[35m[0m: [0m[38;5;12mCookie[0m): [0m[36mvoid[0m
+  Set the cookie header properly in the headers[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts[0m
+      import { Cookie, setCookie } from "@std/http/cookie";[0m
+      import { assertEquals } from "@std/assert";[0m
+      [0m
+      const headers = new Headers();[0m
+      const cookie: Cookie = { name: "Space", value: "Cat" };[0m
+      setCookie(headers, cookie);[0m
+      [0m
+      const cookieHeader = headers.get("set-cookie");[0m
+      [0m
+      assertEquals(cookieHeader, "Space=Cat");[0m
+      ```[0m
+
+  @[0m[35mparam[0m [0m[1mheaders[0m
+      The headers instance to set the cookie to[0m
+
+  @[0m[35mparam[0m [0m[1mcookie[0m
+      Cookie to set[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:36:14
+
+[0m[0m[3m[38;5;8m[0m[0m[35mconst[0m [0m[1mSTATUS_CODE[0m: { [0m[35m[0m[0m[1mContinue[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mSwitchingProtocols[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mProcessing[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mEarlyHints[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mOK[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mCreated[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mAccepted[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mNonAuthoritativeInfo[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mNoContent[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mResetContent[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mPartialContent[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mMultiStatus[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mAlreadyReported[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mIMUsed[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mMultipleChoices[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mMovedPermanently[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mFound[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mSeeOther[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mNotModified[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mUseProxy[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mTemporaryRedirect[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mPermanentRedirect[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mBadRequest[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mUnauthorized[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mPaymentRequired[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mForbidden[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mNotFound[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mMethodNotAllowed[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mNotAcceptable[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mProxyAuthRequired[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mRequestTimeout[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mConflict[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mGone[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mLengthRequired[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mPreconditionFailed[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mContentTooLarge[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mURITooLong[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mUnsupportedMediaType[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mRangeNotSatisfiable[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mExpectationFailed[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mTeapot[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mMisdirectedRequest[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mUnprocessableEntity[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mLocked[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mFailedDependency[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mTooEarly[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mUpgradeRequired[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mPreconditionRequired[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mTooManyRequests[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mRequestHeaderFieldsTooLarge[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mUnavailableForLegalReasons[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mInternalServerError[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mNotImplemented[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mBadGateway[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mServiceUnavailable[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mGatewayTimeout[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mHTTPVersionNotSupported[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mVariantAlsoNegotiates[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mInsufficientStorage[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mLoopDetected[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mNotExtended[0m[0m[35m[0m: [0m[36mnumber[0m; [0m[35m[0m[0m[1mNetworkAuthenticationRequired[0m[0m[35m[0m: [0m[36mnumber[0m; }
+  Contains the {@linkcode STATUS_CODE} object which contains standard HTTP[0m
+  status codes and provides several type guards for handling status codes[0m
+  with type safety.[0m
+
+  @[0m[35mexample[0m
+      The status code and status text[0m
+      ```ts[0m
+      import {[0m
+        STATUS_CODE,[0m
+        STATUS_TEXT,[0m
+      } from "@std/http/status";[0m
+      [0m
+      console.log(STATUS_CODE.NotFound); // Returns 404[0m
+      console.log(STATUS_TEXT[STATUS_CODE.NotFound]); // Returns "Not Found"[0m
+      ```[0m
+
+  @[0m[35mexample[0m
+      Checking the status code type[0m
+      ```ts[0m
+      import { isErrorStatus } from "@std/http/status";[0m
+      [0m
+      const res = await fetch("https://example.com/");[0m
+      [0m
+      if (isErrorStatus(res.status)) {[0m
+        // error handling here...[0m
+      }[0m
+      [0m
+      await res.body?.cancel();[0m
+      ```[0m
+
+  @[0m[35mmodule[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:171:14
+
+[0m[0m[3m[38;5;8m[0m[0m[35mconst[0m [0m[1mSTATUS_TEXT[0m: { [0m[35m[0m[0m[1m[[STATUS_CODE.Accepted]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.AlreadyReported]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.BadGateway]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.BadRequest]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.Conflict]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.Continue]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.Created]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.EarlyHints]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.ExpectationFailed]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.FailedDependency]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.Forbidden]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.Found]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.GatewayTimeout]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.Gone]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.HTTPVersionNotSupported]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.IMUsed]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.InsufficientStorage]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.InternalServerError]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.LengthRequired]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.Locked]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.LoopDetected]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.MethodNotAllowed]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.MisdirectedRequest]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.MovedPermanently]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.MultiStatus]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.MultipleChoices]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.NetworkAuthenticationRequired]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.NoContent]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.NonAuthoritativeInfo]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.NotAcceptable]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.NotExtended]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.NotFound]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.NotImplemented]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.NotModified]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.OK]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.PartialContent]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.PaymentRequired]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.PermanentRedirect]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.PreconditionFailed]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.PreconditionRequired]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.Processing]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.ProxyAuthRequired]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.ContentTooLarge]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.RequestHeaderFieldsTooLarge]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.RequestTimeout]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.URITooLong]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.RangeNotSatisfiable]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.ResetContent]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.SeeOther]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.ServiceUnavailable]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.SwitchingProtocols]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.Teapot]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.TemporaryRedirect]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.TooEarly]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.TooManyRequests]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.Unauthorized]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.UnavailableForLegalReasons]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.UnprocessableEntity]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.UnsupportedMediaType]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.UpgradeRequired]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.UseProxy]][0m[0m[35m[0m: [0m[36mstring[0m; [0m[35m[0m[0m[1m[[STATUS_CODE.VariantAlsoNegotiates]][0m[0m[35m[0m: [0m[36mstring[0m; }
+  A record of all the status codes text.[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/server_sent_event_stream.ts:96:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mclass[0m [0m[1mServerSentEventStream[0m [0m[35mextends[0m TransformStream<[0m[38;5;12mServerSentEventMessage[0m, [0m[38;5;12mUint8Array[0m>
+  Transforms server-sent message objects into strings for the client.[0m
+
+  @[0m[35msee[0m
+      {@link https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events}[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts no-assert[0m
+      import {[0m
+        type ServerSentEventMessage,[0m
+        ServerSentEventStream,[0m
+      } from "@std/http/server-sent-event-stream";[0m
+      [0m
+      const stream = ReadableStream.from<ServerSentEventMessage>([[0m
+        { data: "hello there" }[0m
+      ]).pipeThrough(new ServerSentEventStream());[0m
+      new Response(stream, {[0m
+        headers: {[0m
+          "content-type": "text/event-stream",[0m
+          "cache-control": "no-cache",[0m
+        },[0m
+      });[0m
+      ```[0m
+
+
+  [0m[35m[0m[0m[35mconstructor[0m()
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/user_agent.ts:982:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35m[0m[0m[35mclass[0m [0m[1mUserAgent[0m
+  A representation of user agent string, which can be used to determine[0m
+  environmental information represented by the string. All properties are[0m
+  determined lazily.[0m
+
+  @[0m[35mexample[0m
+      Usage[0m
+      ```ts ignore[0m
+      import { UserAgent } from "@std/http/user-agent";[0m
+      [0m
+      Deno.serve((req) => {[0m
+        const userAgent = new UserAgent(req.headers.get("user-agent") ?? "");[0m
+        return new Response(`Hello, ${userAgent.browser.name}[0m
+          on ${userAgent.os.name} ${userAgent.os.version}!`);[0m
+      });[0m
+      ```[0m
+
+
+  [0m[35m[0m[0m[35mconstructor[0m([0m[35m[0m[0m[35m[0m[0m[35m[0mua[0m[35m[0m: [0m[36mstring[0m | [0m[36mnull[0m)
+    Constructs a new instance.[0m
+
+    @[0m[35mparam[0m [0m[1mua[0m
+        The user agent string to construct this instance with.[0m
+
+  [0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35mget [0m[0m[35m[0m[0m[1mbrowser[0m[0m[35m[0m(): [0m[38;5;12mBrowser[0m
+    The name and version of the browser extracted from the user agent[0m
+    string.[0m
+
+    @[0m[35mexample[0m
+        Usage[0m
+        ```ts ignore[0m
+        import { UserAgent } from "@std/http/user-agent";[0m
+        [0m
+        Deno.serve((req) => {[0m
+          const userAgent = new UserAgent(req.headers.get("user-agent") ?? "");[0m
+          return new Response(`Hello, ${userAgent.browser.name}!`);[0m
+        });[0m
+        ```[0m
+
+    @[0m[35mreturn[0m
+        An object with information about the user agent's browser.[0m
+
+  [0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35mget [0m[0m[35m[0m[0m[1mcpu[0m[0m[35m[0m(): [0m[38;5;12mCpu[0m
+    The architecture of the CPU extracted from the user agent string.[0m
+
+    @[0m[35mexample[0m
+        Usage[0m
+        ```ts ignore[0m
+        import { UserAgent } from "@std/http/user-agent";[0m
+        [0m
+        Deno.serve((req) => {[0m
+          const userAgent = new UserAgent(req.headers.get("user-agent") ?? "");[0m
+          return new Response(`Hello, ${userAgent.cpu.architecture}!`);[0m
+        });[0m
+        ```[0m
+
+    @[0m[35mreturn[0m
+        An object with information about the user agent's CPU.[0m
+
+  [0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35mget [0m[0m[35m[0m[0m[1mdevice[0m[0m[35m[0m(): [0m[38;5;12mDevice[0m
+    The model, type, and vendor of a device if present in a user agent[0m
+    string.[0m
+
+    @[0m[35mexample[0m
+        Usage[0m
+        ```ts ignore[0m
+        import { UserAgent } from "@std/http/user-agent";[0m
+        [0m
+        Deno.serve((req) => {[0m
+          const userAgent = new UserAgent(req.headers.get("user-agent") ?? "");[0m
+          return new Response(`Hello, ${userAgent.device.model}!`);[0m
+        });[0m
+        ```[0m
+
+    @[0m[35mreturn[0m
+        An object with information about the user agent's device.[0m
+
+  [0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35mget [0m[0m[35m[0m[0m[1mengine[0m[0m[35m[0m(): [0m[38;5;12mEngine[0m
+    The name and version of the browser engine in a user agent string.[0m
+
+    @[0m[35mexample[0m
+        Usage[0m
+        ```ts ignore[0m
+        import { UserAgent } from "@std/http/user-agent";[0m
+        [0m
+        Deno.serve((req) => {[0m
+          const userAgent = new UserAgent(req.headers.get("user-agent") ?? "");[0m
+          return new Response(`Hello, ${userAgent.engine.name}!`);[0m
+        });[0m
+        ```[0m
+
+    @[0m[35mreturn[0m
+        An object with information about the user agent's browser engine.[0m
+
+  [0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35mget [0m[0m[35m[0m[0m[1mos[0m[0m[35m[0m(): [0m[38;5;12mOs[0m
+    The name and version of the operating system in a user agent string.[0m
+
+    @[0m[35mexample[0m
+        Usage[0m
+        ```ts ignore[0m
+        import { UserAgent } from "@std/http/user-agent";[0m
+        [0m
+        Deno.serve((req) => {[0m
+          const userAgent = new UserAgent(req.headers.get("user-agent") ?? "");[0m
+          return new Response(`Hello, ${userAgent.os.name}!`);[0m
+        });[0m
+        ```[0m
+
+    @[0m[35mreturn[0m
+        An object with information about the user agent's OS.[0m
+
+  [0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35mget [0m[0m[35m[0m[0m[1mua[0m[0m[35m[0m(): [0m[36mstring[0m
+    A read only version of the user agent string related to the instance.[0m
+
+    @[0m[35mexample[0m
+        Usage[0m
+        ```ts ignore[0m
+        import { UserAgent } from "@std/http/user-agent";[0m
+        [0m
+        Deno.serve((req) => {[0m
+          const userAgent = new UserAgent(req.headers.get("user-agent") ?? "");[0m
+          return new Response(`Hello, ${userAgent.ua}!`);[0m
+        });[0m
+        ```[0m
+
+    @[0m[35mreturn[0m
+        The user agent string.[0m
+
+  [0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[1mtoJSON[0m[0m[35m[0m(): { [0m[35m[0m[0m[1mbrowser[0m[0m[35m[0m: [0m[38;5;12mBrowser[0m; [0m[35m[0m[0m[1mcpu[0m[0m[35m[0m: [0m[38;5;12mCpu[0m; [0m[35m[0m[0m[1mdevice[0m[0m[35m[0m: [0m[38;5;12mDevice[0m; [0m[35m[0m[0m[1mengine[0m[0m[35m[0m: [0m[38;5;12mEngine[0m; [0m[35m[0m[0m[1mos[0m[0m[35m[0m: [0m[38;5;12mOs[0m; [0m[35m[0m[0m[1mua[0m[0m[35m[0m: [0m[36mstring[0m; }
+    Converts the current instance to a JSON representation.[0m
+
+    @[0m[35mexample[0m
+        Usage[0m
+        ```ts ignore[0m
+        import { UserAgent } from "@std/http/user-agent";[0m
+        [0m
+        Deno.serve((req) => {[0m
+          const userAgent = new UserAgent(req.headers.get("user-agent") ?? "");[0m
+          return new Response(`Hello, ${JSON.stringify(userAgent.toJSON())}!`);[0m
+        });[0m
+        ```[0m
+
+    @[0m[35mreturn[0m
+        A JSON representation on this user agent instance.[0m
+
+  [0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[1mtoString[0m[0m[35m[0m(): [0m[36mstring[0m
+    Converts the current instance to a string.[0m
+
+    @[0m[35mexample[0m
+        Usage[0m
+        ```ts ignore[0m
+        import { UserAgent } from "@std/http/user-agent";[0m
+        [0m
+        Deno.serve((req) => {[0m
+          const userAgent = new UserAgent(req.headers.get("user-agent") ?? "");[0m
+          return new Response(`Hello, ${userAgent.toString()}!`);[0m
+        });[0m
+        ```[0m
+
+    @[0m[35mreturn[0m
+        The user agent string.[0m
+
+  [0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[1m[Symbol.for("Deno.customInspect")][0m[0m[35m[0m(inspect[0m[35m[0m: [0m[35m[0m(value[0m[35m[0m: [0m[36munknown[0m) => [0m[36mstring[0m): [0m[36mstring[0m
+    Custom output for {@linkcode Deno.inspect}.[0m
+
+    @[0m[35mexample[0m
+        Usage[0m
+        ```ts ignore[0m
+        import { UserAgent } from "@std/http/user-agent";[0m
+        [0m
+        Deno.serve((req) => {[0m
+          const userAgent = new UserAgent(req.headers.get("user-agent") ?? "");[0m
+          Deno.inspect(userAgent);[0m
+          return new Response(`Hello, ${userAgent.ua}!`);[0m
+        });[0m
+        ```[0m
+
+    @[0m[35mparam[0m [0m[1minspect[0m
+        internal inspect function.[0m
+
+    @[0m[35mreturn[0m
+        The custom value to inspect.[0m
+
+  [0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[35m[0m[0m[1m[Symbol.for("nodejs.util.inspect.custom")][0m[0m[35m[0m(depth[0m[35m[0m: [0m[36mnumber[0m, options[0m[35m[0m: [0m[36many[0m, inspect[0m[35m[0m: [0m[35m[0m(value[0m[35m[0m: [0m[36munknown[0m, options[0m[35m?[0m: [0m[36munknown[0m) => [0m[36mstring[0m): [0m[36mstring[0m
+    Custom output for Node's[0m
+    {@linkcode https://nodejs.org/api/util.html#utilinspectobject-options | util.inspect}.[0m
+
+    @[0m[35mexample[0m
+        Usage[0m
+        ```ts ignore[0m
+        import { UserAgent } from "@std/http/user-agent";[0m
+        import { inspect } from "node:util";[0m
+        [0m
+        Deno.serve((req) => {[0m
+          const userAgent = new UserAgent(req.headers.get("user-agent") ?? "");[0m
+          inspect(userAgent);[0m
+          return new Response(`Hello, ${userAgent.ua}!`);[0m
+        });[0m
+        ```[0m
+
+    @[0m[35mparam[0m [0m[1mdepth[0m
+        internal inspect depth.[0m
+
+    @[0m[35mparam[0m [0m[1moptions[0m
+        internal inspect option.[0m
+
+    @[0m[35mparam[0m [0m[1minspect[0m
+        internal inspect function.[0m
+
+    @[0m[35mreturn[0m
+        The custom value to inspect.[0m
+
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/user_agent.ts:72:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35minterface[0m [0m[1mBrowser[0m
+  The browser as described by a user agent string.[0m
+
+  [0m[35mreadonly [0m[0m[1mmajor[0m[0m[35m[0m: [0m[36mstring[0m | [0m[36mundefined[0m
+    The major version of a browser.[0m
+  [0m[35mreadonly [0m[0m[1mname[0m[0m[35m[0m: [0m[36mstring[0m | [0m[36mundefined[0m
+    The name of a browser.[0m
+  [0m[35mreadonly [0m[0m[1mversion[0m[0m[35m[0m: [0m[36mstring[0m | [0m[36mundefined[0m
+    The version of a browser.[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/cookie.ts:11:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35minterface[0m [0m[1mCookie[0m
+  Represents an HTTP Cookie.[0m
+
+  @[0m[35msee[0m
+      {@link https://www.rfc-editor.org/rfc/rfc6265.html#section-4.2.1}[0m
+
+
+  [0m[35m[0m[0m[1mname[0m[0m[35m[0m: [0m[36mstring[0m
+    Name of the cookie.[0m
+  [0m[35m[0m[0m[1mvalue[0m[0m[35m[0m: [0m[36mstring[0m
+    Value of the cookie.[0m
+  [0m[35m[0m[0m[1mexpires[0m[0m[35m?[0m: [0m[38;5;12mDate[0m | [0m[36mnumber[0m
+    The cookie's `Expires` attribute, either as an explicit date or UTC[0m
+    milliseconds. If `undefined`, the cookie will expire when the client's[0m
+    session ends.[0m
+
+    @[0m[35mexample[0m
+        <caption>Explicit date:</caption>[0m
+        [0m
+        ```ts[0m
+        import { Cookie } from "@std/http/cookie";[0m
+        const cookie: Cookie = {[0m
+          name: 'name',[0m
+          value: 'value',[0m
+          // expires on Fri Dec 30 2022[0m
+          expires: new Date('2022-12-31')[0m
+        }[0m
+        ```[0m
+
+    @[0m[35mexample[0m
+        <caption>UTC milliseconds</caption>[0m
+        [0m
+        ```ts[0m
+        import { Cookie } from "@std/http/cookie";[0m
+        const cookie: Cookie = {[0m
+          name: 'name',[0m
+          value: 'value',[0m
+          // expires 10 seconds from now[0m
+          expires: Date.now() + 10000[0m
+        }[0m
+        ```[0m
+
+  [0m[35m[0m[0m[1mmaxAge[0m[0m[35m?[0m: [0m[36mnumber[0m
+    The cookie's `Max-Age` attribute, in seconds. Must be a non-negative[0m
+    integer. A cookie with a `maxAge` of `0` expires immediately.[0m
+  [0m[35m[0m[0m[1mdomain[0m[0m[35m?[0m: [0m[36mstring[0m
+    The cookie's `Domain` attribute. Specifies those hosts to which the cookie[0m
+    will be sent.[0m
+  [0m[35m[0m[0m[1mpath[0m[0m[35m?[0m: [0m[36mstring[0m
+    The cookie's `Path` attribute. A cookie with a path will only be included[0m
+    in the `Cookie` request header if the requested URL matches that path.[0m
+  [0m[35m[0m[0m[1msecure[0m[0m[35m?[0m: [0m[36mboolean[0m
+    The cookie's `Secure` attribute. If `true`, the cookie will only be[0m
+    included in the `Cookie` request header if the connection uses SSL and[0m
+    HTTPS.[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36mfalse[0m[0m}
+  [0m[35m[0m[0m[1mhttpOnly[0m[0m[35m?[0m: [0m[36mboolean[0m
+    The cookie's `HTTPOnly` attribute. If `true`, the cookie cannot be accessed via JavaScript.[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36mfalse[0m[0m}
+  [0m[35m[0m[0m[1mpartitioned[0m[0m[35m?[0m: [0m[36mboolean[0m
+    The cookie's `Partitioned` attribute.[0m
+    If `true`, the cookie will be only be included in the `Cookie` request header if[0m
+    the domain it is embedded by matches the domain the cookie was originally set from.[0m
+    [0m
+    Warning: This is an attribute that has not been fully standardized yet.[0m
+    It may change in the future without following the semver semantics of the package.[0m
+    Clients may ignore the attribute until they understand it.[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36mfalse[0m[0m}
+  [0m[35m[0m[0m[1msameSite[0m[0m[35m?[0m: [0m[32m"Strict"[0m | [0m[32m"Lax"[0m | [0m[32m"None"[0m
+    Allows servers to assert that a cookie ought not to[0m
+    be sent along with cross-site requests.[0m
+  [0m[35m[0m[0m[1munparsed[0m[0m[35m?[0m: [0m[36mstring[0m[]
+    Additional key value pairs with the form "key=value".[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36m[][0m[0m}
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/user_agent.ts:115:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35minterface[0m [0m[1mCpu[0m
+  The CPU information as described by a user agent string.[0m
+
+  [0m[35mreadonly [0m[0m[1marchitecture[0m[0m[35m[0m: [0m[36mstring[0m | [0m[36mundefined[0m
+    The CPU architecture.[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/user_agent.ts:82:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35minterface[0m [0m[1mDevice[0m
+  The device as described by a user agent string.[0m
+
+  [0m[35mreadonly [0m[0m[1mmodel[0m[0m[35m[0m: [0m[36mstring[0m | [0m[36mundefined[0m
+    The model of the device.[0m
+  [0m[35mreadonly [0m[0m[1mtype[0m[0m[35m[0m: [0m[32m"console"[0m | [0m[32m"embedded"[0m | [0m[32m"mobile"[0m | [0m[32m"tablet"[0m | [0m[32m"smarttv"[0m | [0m[32m"wearable"[0m | [0m[36mundefined[0m
+    The type of device.[0m
+  [0m[35mreadonly [0m[0m[1mvendor[0m[0m[35m[0m: [0m[36mstring[0m | [0m[36mundefined[0m
+    The vendor of the device.[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/etag.ts:37:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35minterface[0m [0m[1mETagOptions[0m
+  Options for {@linkcode eTag}.[0m
+
+  [0m[35m[0m[0m[1malgorithm[0m[0m[35m?[0m: [0m[38;5;12mAlgorithmIdentifier[0m
+    A digest algorithm to use to calculate the etag.[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36m"SHA-256"[0m[0m}
+  [0m[35m[0m[0m[1mweak[0m[0m[35m?[0m: [0m[36mboolean[0m
+    Override the default behavior of calculating the `ETag`, either forcing[0m
+    a tag to be labelled weak or not.[0m
+    [0m
+    Defaults to `true` when the entity is a `FileInfo` and `false` otherwise.[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/user_agent.ts:99:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35minterface[0m [0m[1mEngine[0m
+  The browser engine as described by a user agent string.[0m
+
+  [0m[35mreadonly [0m[0m[1mname[0m[0m[35m[0m: [0m[36mstring[0m | [0m[36mundefined[0m
+    The browser engine name.[0m
+  [0m[35mreadonly [0m[0m[1mversion[0m[0m[35m[0m: [0m[36mstring[0m | [0m[36mundefined[0m
+    The browser engine version.[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/etag.ts:23:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35minterface[0m [0m[1mFileInfo[0m
+  Just the part of {@linkcode Deno.FileInfo} that is required to calculate an `ETag`,[0m
+  so partial or user generated file information can be passed.[0m
+
+  [0m[35m[0m[0m[1mmtime[0m[0m[35m[0m: [0m[38;5;12mDate[0m | [0m[36mnull[0m
+    The last modification time of the file. This corresponds to the `mtime`[0m
+    field from `stat` on Linux/Mac OS and `ftLastWriteTime` on Windows. This[0m
+    may not be available on all platforms.[0m
+  [0m[35m[0m[0m[1msize[0m[0m[35m[0m: [0m[36mnumber[0m
+    The size of the file, in bytes.[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/user_agent.ts:107:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35minterface[0m [0m[1mOs[0m
+  The OS as described by a user agent string.[0m
+
+  [0m[35mreadonly [0m[0m[1mname[0m[0m[35m[0m: [0m[36mstring[0m | [0m[36mundefined[0m
+    The OS name.[0m
+  [0m[35mreadonly [0m[0m[1mversion[0m[0m[35m[0m: [0m[36mstring[0m | [0m[36mundefined[0m
+    The OS version.[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/file_server.ts:563:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35minterface[0m [0m[1mServeDirOptions[0m
+  Interface for serveDir options.[0m
+
+  [0m[35m[0m[0m[1mfsRoot[0m[0m[35m?[0m: [0m[36mstring[0m
+    Serves the files under the given directory root. Defaults to your current directory.[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36m"."[0m[0m}
+  [0m[35m[0m[0m[1murlRoot[0m[0m[35m?[0m: [0m[36mstring[0m
+    Specified that part is stripped from the beginning of the requested pathname.[0m
+  [0m[35m[0m[0m[1mshowDirListing[0m[0m[35m?[0m: [0m[36mboolean[0m
+    Enable directory listing.[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36mfalse[0m[0m}
+  [0m[35m[0m[0m[1mshowDotfiles[0m[0m[35m?[0m: [0m[36mboolean[0m
+    Serves dotfiles.[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36mfalse[0m[0m}
+  [0m[35m[0m[0m[1mshowIndex[0m[0m[35m?[0m: [0m[36mboolean[0m
+    Serves `index.html` as the index file of the directory.[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36mtrue[0m[0m}
+  [0m[35m[0m[0m[1menableCors[0m[0m[35m?[0m: [0m[36mboolean[0m
+    Enable CORS via the[0m
+    {@linkcode https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Origin | Access-Control-Allow-Origin}[0m
+    header.[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36mfalse[0m[0m}
+  [0m[35m[0m[0m[1mquiet[0m[0m[35m?[0m: [0m[36mboolean[0m
+    Do not print request level logs.[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36mfalse[0m[0m}
+  [0m[35m[0m[0m[1metagAlgorithm[0m[0m[35m?[0m: [0m[38;5;12mAlgorithmIdentifier[0m
+    The algorithm to use for generating the ETag.[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36m"SHA-256"[0m[0m}
+  [0m[35m[0m[0m[1mheaders[0m[0m[35m?[0m: [0m[36mstring[0m[]
+    Headers to add to each response[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36m[][0m[0m}
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/file_server.ts:142:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35minterface[0m [0m[1mServeFileOptions[0m
+  Options for {@linkcode serveFile}.[0m
+
+  [0m[35m[0m[0m[1metagAlgorithm[0m[0m[35m?[0m: [0m[38;5;12mAlgorithmIdentifier[0m
+    The algorithm to use for generating the ETag.[0m
+
+    @[0m[35mdefault[0m {[0m[3m[0m[36m"SHA-256"[0m[0m}
+  [0m[35m[0m[0m[1mfileInfo[0m[0m[35m?[0m: [0m[38;5;12mDeno.FileInfo[0m
+    An optional object returned by {@linkcode Deno.stat}. It is used for[0m
+    optimization purposes.[0m
+    [0m
+    Defaults to the result of calling {@linkcode Deno.stat} with the provided[0m
+    `filePath`.[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/server_sent_event_stream.ts:12:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35minterface[0m [0m[1mServerSentEventMessage[0m
+  Represents a message in the Server-Sent Event (SSE) protocol.[0m
+
+  @[0m[35msee[0m
+      {@link https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events#fields}[0m
+
+
+  [0m[35m[0m[0m[1mcomment[0m[0m[35m?[0m: [0m[36mstring[0m
+    Ignored by the client.[0m
+  [0m[35m[0m[0m[1mevent[0m[0m[35m?[0m: [0m[36mstring[0m
+    A string identifying the type of event described.[0m
+  [0m[35m[0m[0m[1mdata[0m[0m[35m?[0m: [0m[36mstring[0m
+    The data field for the message. Split by new lines.[0m
+  [0m[35m[0m[0m[1mid[0m[0m[35m?[0m: [0m[36mstring[0m | [0m[36mnumber[0m
+    The event ID to set the {@linkcode EventSource} object's last event ID value.[0m
+  [0m[35m[0m[0m[1mretry[0m[0m[35m?[0m: [0m[36mnumber[0m
+    The reconnection time.[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:271:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35mtype[0m [0m[1mClientErrorStatus[0m = typeof STATUS_CODE.BadRequest | typeof STATUS_CODE.Unauthorized | typeof STATUS_CODE.PaymentRequired | typeof STATUS_CODE.Forbidden | typeof STATUS_CODE.NotFound | typeof STATUS_CODE.MethodNotAllowed | typeof STATUS_CODE.NotAcceptable | typeof STATUS_CODE.ProxyAuthRequired | typeof STATUS_CODE.RequestTimeout | typeof STATUS_CODE.Conflict | typeof STATUS_CODE.Gone | typeof STATUS_CODE.LengthRequired | typeof STATUS_CODE.PreconditionFailed | typeof STATUS_CODE.ContentTooLarge | typeof STATUS_CODE.URITooLong | typeof STATUS_CODE.UnsupportedMediaType | typeof STATUS_CODE.RangeNotSatisfiable | typeof STATUS_CODE.ExpectationFailed | typeof STATUS_CODE.Teapot | typeof STATUS_CODE.MisdirectedRequest | typeof STATUS_CODE.UnprocessableEntity | typeof STATUS_CODE.Locked | typeof STATUS_CODE.FailedDependency | typeof STATUS_CODE.UpgradeRequired | typeof STATUS_CODE.PreconditionRequired | typeof STATUS_CODE.TooManyRequests | typeof STATUS_CODE.RequestHeaderFieldsTooLarge | typeof STATUS_CODE.UnavailableForLegalReasons
+  An HTTP status that is a client error (4XX).[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:316:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35mtype[0m [0m[1mErrorStatus[0m = [0m[38;5;12mClientErrorStatus[0m | [0m[38;5;12mServerErrorStatus[0m
+  An HTTP status that is an error (4XX and 5XX).[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:241:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35mtype[0m [0m[1mInformationalStatus[0m = typeof STATUS_CODE.Continue | typeof STATUS_CODE.SwitchingProtocols | typeof STATUS_CODE.Processing | typeof STATUS_CODE.EarlyHints
+  An HTTP status that is a informational (1XX).[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:261:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35mtype[0m [0m[1mRedirectStatus[0m = typeof STATUS_CODE.MultipleChoices | typeof STATUS_CODE.MovedPermanently | typeof STATUS_CODE.Found | typeof STATUS_CODE.SeeOther | typeof STATUS_CODE.UseProxy | typeof STATUS_CODE.TemporaryRedirect | typeof STATUS_CODE.PermanentRedirect
+  An HTTP status that is a redirect (3XX).[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:302:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35mtype[0m [0m[1mServerErrorStatus[0m = typeof STATUS_CODE.InternalServerError | typeof STATUS_CODE.NotImplemented | typeof STATUS_CODE.BadGateway | typeof STATUS_CODE.ServiceUnavailable | typeof STATUS_CODE.GatewayTimeout | typeof STATUS_CODE.HTTPVersionNotSupported | typeof STATUS_CODE.VariantAlsoNegotiates | typeof STATUS_CODE.InsufficientStorage | typeof STATUS_CODE.LoopDetected | typeof STATUS_CODE.NotExtended | typeof STATUS_CODE.NetworkAuthenticationRequired
+  An HTTP status that is a server error (5XX).[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:168:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35mtype[0m [0m[1mStatusCode[0m = typeof STATUS_CODE[keyof typeof STATUS_CODE]
+  An HTTP status code.[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:238:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35mtype[0m [0m[1mStatusText[0m = typeof STATUS_TEXT[keyof typeof STATUS_TEXT]
+  An HTTP status text.[0m
+
+[0m[3m[38;5;8mDefined in https://jsr.io/@std/http/1.0.14/status.ts:248:1
+
+[0m[0m[3m[38;5;8m[0m[0m[35mtype[0m [0m[1mSuccessfulStatus[0m = typeof STATUS_CODE.OK | typeof STATUS_CODE.Created | typeof STATUS_CODE.Accepted | typeof STATUS_CODE.NonAuthoritativeInfo | typeof STATUS_CODE.NoContent | typeof STATUS_CODE.ResetContent | typeof STATUS_CODE.PartialContent | typeof STATUS_CODE.MultiStatus | typeof STATUS_CODE.AlreadyReported | typeof STATUS_CODE.IMUsed
+  An HTTP status that is a success (2XX).[0m
+

@@ -44,7 +44,7 @@
     (在 Windows PowerShell 中使用 `$env:MEMOBIRD_AK = "YOUR_ACCESS_KEY"`)
 
 2.  **命令行参数**:
-    在运行命令时添加 `--ak` 和 `--did` 参数：
+    在运行命令时添加 `--ak` (或 `--access_key`) 和 `--did` (或 `--device_id`) 参数：
     ```bash
     deno task start --ak YOUR_ACCESS_KEY --did YOUR_DEVICE_ID
     ```

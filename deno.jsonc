@@ -1,0 +1,39 @@
+{
+  "tasks": {
+    // 有参数的话，带到命令行中
+    "start": "deno run --allow-net --allow-env=MEMOBIRD_AK,MEMOBIRD_DEVICE_ID --allow-read src/main.ts",
+    "start:sse": "deno run --allow-net --allow-env=MEMOBIRD_AK,MEMOBIRD_DEVICE_ID --allow-read src/main.ts -t sse -p 8085",
+    "dev": "deno run --watch --allow-net --allow-env=MEMOBIRD_AK,MEMOBIRD_DEVICE_ID --allow-read src/main.ts"
+  },
+  "lint": {
+    "files": {
+      "include": ["src/"]
+    },
+    "rules": {
+      "tags": ["recommended"],
+      "exclude": ["no-explicit-any"]
+    }
+  },
+  "fmt": {
+    "files": {
+      "include": ["src/"]
+    },
+    "options": {
+      "useTabs": false,
+      "lineWidth": 80,
+      "indentWidth": 2,
+      "singleQuote": false
+    }
+  },
+  // "compilerOptions": { // 可选，如果需要 JSX 或其他编译选项
+  //   "jsx": "react-jsx",
+  //   "jsxImportSource": "npm:hono/jsx"
+  // },
+  // "importMap": { // 可选，如果想简化导入路径
+  //   "imports": {
+  //     "zod": "npm:zod",
+  //     "@mcp/sdk/": "npm:@modelcontextprotocol/sdk/",
+  //     "@std/cli/": "jsr:@std/cli/"
+  //   }
+  // }
+}
